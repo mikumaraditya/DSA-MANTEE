@@ -6,20 +6,19 @@ let lastUrl = location.href;
 // Hint tracking
 let hintLevel = 0;
 let hintHistory = [];
-let apiKey = "";
 
-// Load API key from Chrome storage (with basic error handling)
-if (typeof chrome !== "undefined" && chrome.storage) {
-  chrome.storage.sync.get("groqApiKey", (data) => {
-    apiKey = data?.groqApiKey || "";
-    if (!apiKey) {
-      console.warn("⚠️ API key not set. Configure in extension settings.");
+// Helper function to get API key from Chrome storage
+async function getApiKey() {
+  return new Promise((resolve) => {
+    if (typeof chrome !== "undefined" && chrome.storage) {
+      chrome.storage.sync.get("groqApiKey", (data) => {
+        resolve(data?.groqApiKey || "");
+      });
     } else {
-      console.log("✅ API key loaded successfully");
+      console.error("❌ Chrome storage API not available");
+      resolve("");
     }
   });
-} else {
-  console.error("❌ Chrome storage API not available");
 }
 
 // Detect page change (LeetCode SPA)
@@ -263,6 +262,8 @@ async function getAIHint(problemTitle) {
   hintLevel++;
   if (hintLevel > 5) return "⚠️ Maximum hints reached. Try solving now!";
 
+  const apiKey = await getApiKey();
+  
   if (!apiKey) {
     return "❌ API key not configured. Click the extension icon to add your Groq API key.";
   }
@@ -316,8 +317,10 @@ async function getAIHint(problemTitle) {
 }
 
 async function getPseudoCode(problemTitle) {
+  const apiKey = await getApiKey();
+  
   if (!apiKey) {
-    return "❌ API key not configured.";
+    return "❌ API key not configured. Click the extension icon to add your Groq API key.";
   }
 
   const description = getProblemDescription();
