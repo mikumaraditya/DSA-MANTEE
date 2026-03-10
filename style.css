@@ -1,0 +1,169 @@
+#dsa-mentor-box{
+position:fixed;
+bottom:100px;
+right:40px;
+width:360px;
+max-height:450px;
+background:#0f172a;
+color:#e5e7eb;
+border-radius:14px;
+padding:18px;
+box-shadow:0 20px 40px rgba(0,0,0,0.45);
+font-family:Inter,system-ui;
+z-index:999999;
+overflow-y:auto;
+animation:fadeIn .25s ease;
+}
+
+#dsa-mentor-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-weight:600;
+font-size:16px;
+margin-bottom:8px;
+}
+
+#mentor-close{
+cursor:pointer;
+opacity:.6;
+}
+
+#mentor-close:hover{
+opacity:1;
+}
+
+.mentor-divider{
+height:1px;
+background:#1f2937;
+margin:10px 0;
+border:none;
+}
+
+.mentor-problem{
+font-size:14px;
+margin-bottom:6px;
+}
+
+.mentor-difficulty{
+font-size:13px;
+margin-bottom:10px;
+}
+
+.easy{color:#22c55e;}
+.medium{color:#f59e0b;}
+.hard{color:#ef4444;}
+
+#hint-container{
+display:flex;
+flex-direction:column;
+gap:8px;
+margin-top:10px;
+}
+
+.hint{
+background:#1e293b;
+padding:10px 12px;
+border-radius:8px;
+font-size:13px;
+line-height:1.5;
+}
+
+#next-hint-btn{
+margin-top:14px;
+width:100%;
+padding:10px;
+border:none;
+border-radius:8px;
+background:#4f46e5;
+color:white;
+font-weight:600;
+cursor:pointer;
+transition:.2s;
+}
+
+#next-hint-btn:hover{
+background:#4338ca;
+}
+
+#dsa-mentor-btn{
+position:fixed;
+bottom:40px;
+right:40px;
+background:#4f46e5;
+color:white;
+border:none;
+padding:12px 16px;
+border-radius:10px;
+font-weight:600;
+cursor:pointer;
+box-shadow:0 10px 25px rgba(0,0,0,.35);
+}
+
+#dsa-mentor-btn:hover{
+background:#4338ca;
+}
+
+@keyframes fadeIn{
+from{
+opacity:0;
+transform:translateY(8px);
+}
+to{
+opacity:1;
+transform:translateY(0);
+}
+}
+
+#pseudocode-btn{
+  width:100%;
+  padding:10px;
+  margin-top:12px;
+  border:none;
+  border-radius:8px;
+  background:linear-gradient(135deg,#10b981,#059669);
+  color:white;
+  font-weight:600;
+  font-size:14px;
+  cursor:pointer;
+  transition:all 0.2s ease;
+  display:none;
+}
+
+#pseudocode-btn:hover{
+  transform:scale(1.03);
+  box-shadow:0 6px 15px rgba(0,0,0,0.3);
+}
+
+#pseudocode-btn:active{
+  transform:scale(0.98);
+}
+
+.pseudo-block{
+  background:#0f172a;
+  padding:12px;
+  border-radius:8px;
+  margin-top:8px;
+  font-size:13px;
+  line-height:1.6;
+  white-space:pre-wrap;
+  color:#e5e7eb;
+}
+
+#next-hint-btn:disabled{
+  background:#6b7280;   /* gray color */
+  color:white;
+  cursor:not-allowed;
+  opacity:0.8;
+}
+#next-hint-btn{
+  transition:all 0.3s ease;
+}
+
+#pseudocode-btn:disabled{
+  background:#6b7280;
+  cursor:not-allowed;
+  opacity:0.8;
+}
+
+

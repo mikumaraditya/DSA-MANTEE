@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "DSA Mentor",
+  "version": "1.0",
+  "description": "AI mentor that gives hints for LeetCode problems",
+
+  "permissions": [
+    "activeTab"
+  ],
+
+  "host_permissions": [
+    "https://leetcode.com/*",
+    "https://api.groq.com/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://leetcode.com/problems/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "style.css"
+      ]
+    }
+  ]
+}
