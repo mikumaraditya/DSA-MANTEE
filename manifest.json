@@ -1,29 +1,25 @@
 {
   "manifest_version": 3,
   "name": "DSA Mentor",
-  "version": "1.0",
-  "description": "AI mentor that gives hints for LeetCode problems",
-
+  "version": "1.0.0",
+  "description": "AI-powered DSA hints for LeetCode problems",
   "permissions": [
+    "storage",
+    "scripting",
     "activeTab"
   ],
-
   "host_permissions": [
     "https://leetcode.com/*",
     "https://api.groq.com/*"
   ],
-
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "DSA Mentor Settings"
+  },
   "content_scripts": [
     {
-      "matches": [
-        "https://leetcode.com/problems/*"
-      ],
-      "js": [
-        "content.js"
-      ],
-      "css": [
-        "style.css"
-      ]
+      "matches": ["https://leetcode.com/*"],
+      "js": ["content.js"]
     }
   ]
 }
