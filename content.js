@@ -40,177 +40,34 @@ setInterval(() => {
 
 // Wait until title loads
 function waitForTitle() {
-  // Try multiple selectors for LeetCode title
-  let titleElement = 
-    document.querySelector(".text-title-large a") ||
+  let titleElement =
+    document.querySelector('[data-cy="question-title"]') ||
+    document.querySelector('[data-testid="question-title"]') ||
     document.querySelector("h1") ||
-    document.querySelector("[data-testid='question-title']");
+    document.querySelector("[class*='title']");
 
   if (!titleElement) {
-    setTimeout(waitForTitle, 500);
+    setTimeout(waitForTitle, 800);
     return;
   }
 
   let rawTitle = titleElement.innerText || titleElement.textContent;
   let cleanTitle = rawTitle.split(". ")[1] || rawTitle;
 
-  // Try multiple selectors for difficulty
-  let difficultyElement = 
-    document.querySelector('[class*="text-difficulty"]') ||
-    document.querySelector('[class*="difficulty"]') ||
-    document.querySelector("span[class*='Easy']") ||
-    document.querySelector("span[class*='Medium']") ||
-    document.querySelector("span[class*='Hard']");
-    
+  let difficultyElement = document.querySelector('[class*="difficulty"]');
+
   let difficulty = difficultyElement ? difficultyElement.innerText : "Unknown";
 
-  createMentorButton(cleanTitle, difficulty);
+  if (!document.getElementById("dsa-mentor-btn")) {
+    createMentorButton(cleanTitle, difficulty);
+  }
 }
 
 waitForTitle();
 
-// Inject styles
-function injectStyles() {
-  if (document.getElementById("dsa-mentor-styles")) return;
-
-  const style = document.createElement("style");
-  style.id = "dsa-mentor-styles";
-  style.textContent = `
-    #dsa-mentor-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 600;
-      font-size: 14px;
-      margin-bottom: 8px;
-    }
-
-    #mentor-close {
-      cursor: pointer;
-      font-size: 18px;
-      color: #9ca3af;
-      transition: color 0.2s;
-    }
-
-    #mentor-close:hover {
-      color: #fff;
-    }
-
-    .mentor-divider {
-      border: none;
-      border-top: 1px solid #374151;
-      margin: 8px 0;
-    }
-
-    .mentor-problem {
-      margin: 10px 0;
-      font-size: 13px;
-      word-wrap: break-word;
-    }
-
-    .mentor-difficulty {
-      margin: 10px 0;
-      font-size: 13px;
-    }
-
-    .mentor-difficulty span {
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-weight: 600;
-      font-size: 12px;
-    }
-
-    .mentor-difficulty .easy {
-      background: #10b981;
-      color: white;
-    }
-
-    .mentor-difficulty .medium {
-      background: #f59e0b;
-      color: white;
-    }
-
-    .mentor-difficulty .hard {
-      background: #ef4444;
-      color: white;
-    }
-
-    #hint-container {
-      margin: 12px 0;
-      max-height: 250px;
-      overflow-y: auto;
-    }
-
-    .hint {
-      background: #1f2937;
-      padding: 10px;
-      border-left: 3px solid #4f46e5;
-      border-radius: 4px;
-      margin-bottom: 8px;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .hint b {
-      color: #4f46e5;
-    }
-
-    .pseudo-block {
-      background: #0f172a;
-      padding: 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      overflow-x: auto;
-      color: #d1d5db;
-      margin: 6px 0;
-    }
-
-    #next-hint-btn, #pseudocode-btn {
-      width: 100%;
-      padding: 10px;
-      margin-top: 8px;
-      background: #4f46e5;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 13px;
-      transition: background 0.3s;
-    }
-
-    #next-hint-btn:hover, #pseudocode-btn:hover {
-      background: #4338ca;
-    }
-
-    #next-hint-btn:disabled, #pseudocode-btn:disabled {
-      background: #6b7280;
-      cursor: not-allowed;
-    }
-
-    #dsa-mentor-btn {
-      animation: slideIn 0.3s ease-out;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-  `;
-  document.head.appendChild(style);
-}
-
 // Create floating button
 function createMentorButton(title, difficulty) {
   if (document.getElementById("dsa-mentor-btn")) return;
-
-  injectStyles();
 
   const button = document.createElement("button");
 
@@ -220,15 +77,22 @@ function createMentorButton(title, difficulty) {
   button.style.position = "fixed";
   button.style.bottom = "40px";
   button.style.right = "40px";
-  button.style.padding = "12px 16px";
-  button.style.borderRadius = "10px";
   button.style.background = "#4f46e5";
   button.style.color = "white";
   button.style.border = "none";
+  button.style.padding = "12px 16px";
+  button.style.borderRadius = "10px";
   button.style.fontWeight = "600";
   button.style.cursor = "pointer";
+  button.style.boxShadow = "0 10px 25px rgba(0,0,0,0.35)";
   button.style.zIndex = "999999";
-  button.style.transition = "background 0.3s";
+  button.style.fontSize = "14px";
+
+  document.body.appendChild(button);
+
+  button.addEventListener("click", () => {
+    createHintBox(title, difficulty);
+  });
 
   button.addEventListener("mouseenter", () => {
     button.style.background = "#4338ca";
@@ -237,33 +101,30 @@ function createMentorButton(title, difficulty) {
   button.addEventListener("mouseleave", () => {
     button.style.background = "#4f46e5";
   });
-
-  document.body.appendChild(button);
-
-  button.addEventListener("click", () => {
-    createHintBox(title, difficulty);
-  });
 }
+
 
 // Extract problem description
 function getProblemDescription() {
   // Try multiple selectors for problem description
-  const descElement = 
+  const descElement =
     document.querySelector(".elfjS") ||
     document.querySelector("[data-testid='description']") ||
     document.querySelector(".content__u3I0") ||
     document.querySelector("div[class*='description']");
-    
-  return descElement ? (descElement.innerText || descElement.textContent) : "Description not found.";
+
+  return descElement
+    ? descElement.innerText || descElement.textContent
+    : "Description not found.";
 }
 
 // AI Hint Generator
 async function getAIHint(problemTitle) {
   hintLevel++;
-  if (hintLevel > 5) return "⚠️ Maximum hints reached. Try solving now!";
+  if (hintLevel > 3) return "⚠️ Maximum hints reached. Try solving now!";
 
   const apiKey = await getApiKey();
-  
+
   if (!apiKey) {
     return "❌ API key not configured. Click the extension icon to add your Groq API key.";
   }
@@ -285,31 +146,64 @@ async function getAIHint(problemTitle) {
           messages: [
             {
               role: "system",
-              content: `You are a Socratic DSA Mentor for absolute beginners. 
-          Your goal: Guide the student via questions and analogies. 
-          Constraint: NEVER provide code. Use simple language (no jargon like 'O(n)' or 'hashmap' without explaining it as a 'memory list').`,
+              content: `You are an expert Data Structures and Algorithms mentor.
+
+Your job is to help the student THINK like a problem solver.
+
+Rules:
+• Never give the full solution.
+• Never provide code.
+• Each hint should unlock the next thinking step.
+• Keep hints short, practical and insightful.
+• Focus on patterns used in coding interviews.
+
+Hint structure:
+Hint 1 → Help the student understand what the problem is asking.
+Hint 2 → Guide them toward the correct algorithmic pattern (two pointers, hashmap, stack, sliding window, etc).
+Hint 3 → Reveal the core trick or observation required to solve the problem.
+
+Hints should trigger an "Aha!" moment.
+
+Avoid generic hints like "try using a data structure".
+Explain WHY that structure helps.`,
             },
             {
               role: "user",
-              content: `Problem: ${problemTitle}
-          Description: ${description}
-          Hints already given: ${previousHints}
+              content: `Problem Title: ${problemTitle}
 
-          Provide ONLY the text for Hint #${hintLevel} based on this 5-step progression:
-          Hint 1: Explain the goal using a real-world analogy.
-          Hint 2: Ask a guiding question about input data.
-          Hint 3: Suggest manual pen and paper steps.
-          Hint 4: Introduce a helpful idea or tool.
-          Hint 5: Describe the key logical step needed.
-          IMPORTANT: Return ONLY the hint text. No prefix.`,
+Problem Description:
+${description}
+
+Hints already given:
+${previousHints}
+
+Generate Hint #${hintLevel}.
+
+Requirements:
+• Maximum 2-3 sentences
+• Clear and specific
+• Focus on reasoning, not theory
+• Do not reveal full solution
+• Do not provide code
+
+Goal:
+Help the student move one step closer to discovering the algorithm themselves.`,
             },
           ],
         }),
       },
     );
 
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API Error Response:", errorData);
+      return `❌ API Error: ${errorData?.error?.message || response.statusText}`;
+    }
+
     const data = await response.json();
-    return data?.choices?.[0]?.message?.content || "I'm stuck, try asking again!";
+    return (
+      data?.choices?.[0]?.message?.content || "I'm stuck, try asking again!"
+    );
   } catch (error) {
     console.error("API Error:", error);
     return "❌ Error fetching hint. Check your API key.";
@@ -318,7 +212,7 @@ async function getAIHint(problemTitle) {
 
 async function getPseudoCode(problemTitle) {
   const apiKey = await getApiKey();
-  
+
   if (!apiKey) {
     return "❌ API key not configured. Click the extension icon to add your Groq API key.";
   }
@@ -339,24 +233,70 @@ async function getPseudoCode(problemTitle) {
           messages: [
             {
               role: "system",
-              content:
-                "You are a DSA Mentor. Translate algorithms into 'Plain English Recipes'. Avoid all programming syntax.",
+              content: `
+You are an expert Data Structures and Algorithms mentor.
+
+Your task is to convert the problem solution into CLEAR algorithmic pseudocode.
+
+Rules:
+• Do NOT provide programming language code.
+• Use plain English steps.
+• Each step must represent an actual logical operation.
+• The student should be able to convert this directly into code.
+• Avoid vague instructions like "process the array".
+• Be specific about what needs to be checked or stored.
+
+Structure:
+1. Understand the input
+2. Initialize required variables or data structures
+3. Describe the main algorithm loop or logic
+4. Explain how results are updated
+5. Return the final result
+
+Keep the pseudocode concise but logically complete.
+`,
             },
             {
               role: "user",
-              content: `Provide a 5-step 'Action Plan' for: ${problemTitle}
-          Description: ${description}
+              content: `
+Problem Title: ${problemTitle}
 
-          Rules:
-          1. Use words like 'Look at', 'Store', 'Check', 'Repeat'.
-          2. No semicolons or technical symbols.
-          3. Format as numbered list.
-          Start with: Step-by-Step Logic`,
+Problem Description:
+${description}
+
+Generate a step-by-step pseudocode plan to solve this problem.
+
+Requirements:
+• Maximum 6–8 steps
+• Each step on a new line
+• Each step must describe a logical action
+• Do NOT use programming syntax
+• Do NOT use semicolons or brackets
+
+Format example:
+
+Step 1: Read the input array
+Step 2: Create a variable to store the result
+Step 3: Loop through each element
+Step 4: Check the required condition
+Step 5: Update the result if condition matches
+Step 6: Return the final result
+
+The output must start with:
+
+Step-by-Step Logic
+`,
             },
           ],
         }),
       },
     );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API Error Response:", errorData);
+      return `❌ API Error: ${errorData?.error?.message || response.statusText}`;
+    }
 
     const data = await response.json();
     return data?.choices?.[0]?.message?.content || "Could not generate logic.";
@@ -425,10 +365,12 @@ function createHintBox(title, difficulty) {
 
     const pseudo = await getPseudoCode(title);
 
+    const formattedPseudo = pseudo.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+
     hintContainer.innerHTML += `
       <div class="hint">
         <b>Pseudocode</b>
-        <pre class="pseudo-block">${pseudo}</pre>
+        <div class="pseudo-block">${formattedPseudo}</div>
       </div>
     `;
 
@@ -441,16 +383,21 @@ function createHintBox(title, difficulty) {
 
     const hint = await getAIHint(title);
 
-    hintHistory.push(hint);
+    if (!hintHistory.includes(hint)) {
+      hintHistory.push(hint);
+    }
 
     hintContainer.innerHTML = hintHistory
-      .map((h, i) => `<div class="hint"><b>Hint ${i + 1}</b><br>${h}</div>`)
+      .map(
+        (hint, index) =>
+          `<div class="hint"><b>Hint ${index + 1}</b><br>${hint}</div>`,
+      )
       .join("");
 
     nextBtn.disabled = false;
     nextBtn.innerText = "Get Next Hint";
 
-    if (hintHistory.length >= 5) {
+    if (hintHistory.length >= 3) {
       nextBtn.disabled = true;
       nextBtn.innerText = "Hints Completed";
       pseudoBtn.style.display = "block";

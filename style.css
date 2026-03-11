@@ -148,16 +148,14 @@ transform:translateY(0);
   line-height:1.6;
   white-space:pre-wrap;
   color:#e5e7eb;
+  overflow: hidden;
 }
 
 #next-hint-btn:disabled{
-  background:#6b7280;   /* gray color */
+  background:#6b7280;   
   color:white;
   cursor:not-allowed;
   opacity:0.8;
-}
-#next-hint-btn{
-  transition:all 0.3s ease;
 }
 
 #pseudocode-btn:disabled{
