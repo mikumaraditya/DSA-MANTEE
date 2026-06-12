@@ -6,6 +6,7 @@ let lastUrl = location.href;
 // Hint tracking
 let hintLevel = 0;
 let hintHistory = [];
+let currentPopularSolution = null;
 
 // Helper function to get API key from Chrome storage
 async function getApiKey() {
@@ -33,6 +34,7 @@ setInterval(() => {
 
     hintLevel = 0;
     hintHistory = [];
+    currentPopularSolution = null;
 
     waitForTitle();
   }
@@ -132,6 +134,16 @@ async function getAIHint(problemTitle) {
   const description = getProblemDescription();
   const previousHints = hintHistory.join("\n");
 
+  // Format popular solution info if available
+  let approachContext = "";
+  if (currentPopularSolution && !currentPopularSolution.error) {
+    approachContext = `The student is implementing this specific popular approach:
+Approach: ${currentPopularSolution.approach}
+Time Complexity: ${currentPopularSolution.timeComplexity}
+Space Complexity: ${currentPopularSolution.spaceComplexity}
+Overview: ${currentPopularSolution.summary}`;
+  }
+
   try {
     const requestBody = {
       model: "llama-3.1-8b-instant",
@@ -139,18 +151,20 @@ async function getAIHint(problemTitle) {
         {
           role: "system",
           content: `You are an expert Data Structures and Algorithms (DSA) mentor.
-Your goal is to guide students to discover the optimal solution themselves through Socratic coaching. Never provide code, syntax, or direct solutions.
+${approachContext}
+
+Your job is to guide the student to discover and implement this specific approach step-by-step. Never provide code, syntax, or the final direct solution.
 
 Hint Quality Guidelines:
 1. Be specific to the problem's inputs and constraints. Do not give generic theoretical advice.
-2. Analyze the input constraints (e.g., N <= 10^5) to show why certain time complexities are required (e.g., O(N) or O(N log N)).
-3. Explain the "WHY": If you suggest a data structure or pattern, explain the specific property of the data structure that matches this problem's requirements.
-4. Walk through a small, concrete input example to show the step-by-step logic (e.g., "For array [2, 1, 3] and sum 3, what happens when...").
+2. Analyze the input constraints (e.g., N <= 10^5) to show why this approach's time complexity is required.
+3. Explain the "WHY": Explain why this specific pattern fits.
+4. Walk through a small, concrete input example if helpful.
 
-Progression Structure:
-- Hint 1 (Intuition & Constraints): Help them break down what the inputs/outputs represent. Discuss the brute-force approach, identify the constraint size, explain the target time complexity, and ask a question about how to optimize.
-- Hint 2 (Pattern & Rationale): Identify the optimal pattern/technique (e.g., Two Pointers, Monotonic Stack, Dynamic Programming) and explain why it fits. Walk them through a small test case showing how the pattern processes the elements.
-- Hint 3 (State & Transitions): Describe the state variables needed (e.g., 'left' and 'right' pointers, 'max_len') and how to update them as elements are processed. Mention a critical edge case (e.g., empty arrays, duplicates) to handle.
+Progression Structure for this specific approach:
+- Hint 1: Help the student understand the core idea of this approach, how to set up the initial state/variables/pointers, and constraints.
+- Hint 2: Guide them towards the traversal/iteration logic (e.g. how the loop runs, how pointers move, or how the map is updated in each step).
+- Hint 3: Reveal the final transition logic, state updates, edge cases to watch out for, or how the final result is determined.
 
 Response Rules:
 - Never write code blocks, code syntax, or code comments.
@@ -201,33 +215,44 @@ async function getPseudoCode(problemTitle) {
 
   const description = getProblemDescription();
 
-  try {
-    const requestBody = {
-      model: "llama-3.1-8b-instant",
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert DSA mentor. Your task is to output highly structured, language-agnostic pseudocode.
+  // Format popular solution info if available
+  let approachContext = "";
+  if (currentPopularSolution && !currentPopularSolution.error) {
+    approachContext = `Approach: ${currentPopularSolution.approach}
+Overview: ${currentPopularSolution.summary}`;
+  }
 
-Formatting Rules:
-1. Write structured, indented pseudocode (using spaces for indentation).
-2. Use uppercase keywords for control flow: FUNCTION, INITIALIZE, LOOP, IF, ELSE, WHILE, RETURN.
-3. Do NOT use programming language syntax (like semicolons, curly braces, or specific language libraries).
-4. Write steps in clear, plain English.
-5. Bold variable names and key terms using markdown asterisks (**variable**).`,
-        },
-        {
-          role: "user",
-          content: `Problem Title: ${problemTitle}
+  const requestBody = {
+    model: "llama-3.1-8b-instant",
+    messages: [
+      {
+        role: "system",
+        content: `You are an expert DSA mentor. Your task is to output highly structured, language-agnostic, and extremely easy-to-understand pseudocode.
+${approachContext}
+
+Formatting & Naming Rules:
+1. At the very beginning of the pseudocode, write a short, 1-2 sentence high-level logic flow summary prefixed with '#'.
+2. Write structured, indented pseudocode (using spaces for indentation).
+3. Use uppercase keywords for control flow: FUNCTION, INITIALIZE, LOOP, IF, ELSE, WHILE, RETURN.
+4. Do NOT use programming language syntax (like semicolons, curly braces, or specific language libraries).
+5. Write steps in clear, plain English.
+6. Add brief inline comments (prefixed with '#') to explain the purpose of variables, complex loop conditions, and key calculations.
+7. Use highly descriptive, clean, and self-documenting naming conventions representing this specific algorithm. Do not use generic single-letter names (e.g., write 'leftPointer', 'rightPointer', 'currentSum', 'hasSeenValue', 'charLastSeenMap' instead of single letters like 'l', 'r', 's', 'val', 'm' except for simple loop indexes if required).
+8. Bold variable names and key terms using markdown asterisks (**variable**).`,
+      },
+      {
+        role: "user",
+        content: `Problem Title: ${problemTitle}
 Problem Description:
 ${description}
 
 Provide a clean, step-by-step pseudocode structure for the optimal solution.
 Start directly with the code block format. Do not add introductory or concluding conversational text.`,
-        },
-      ],
-    };
+      },
+    ],
+  };
 
+  try {
     return new Promise((resolve) => {
       chrome.runtime.sendMessage(
         { action: "groqFetch", apiKey, body: requestBody },
@@ -249,33 +274,119 @@ Start directly with the code block format. Do not add introductory or concluding
   }
 }
 
+// Fetch popular solution metadata
+async function getPopularSolution(problemTitle) {
+  const apiKey = await getApiKey();
+  if (!apiKey) {
+    return {
+      error: "API key not configured. Click the extension icon to add your Groq API key."
+    };
+  }
+
+  const description = getProblemDescription();
+
+  const requestBody = {
+    model: "llama-3.1-8b-instant",
+    messages: [
+      {
+        role: "system",
+        content: `You are an expert DSA mentor. Identify the single most popular, optimal, and widely accepted approach to solve this LeetCode problem.
+You must respond strictly in JSON format. Do not write any explanations before or after the JSON. Do not wrap the JSON in markdown code blocks like \`\`\`json.
+Response format must be exactly:
+{
+  "approach": "Approach Name (e.g. 'Two Pointers', 'HashMap Single-Pass')",
+  "timeComplexity": "e.g. 'O(N)'",
+  "spaceComplexity": "e.g. 'O(1)'",
+  "summary": "1-2 sentence concise explanation of why this approach works and is optimal."
+}`
+      },
+      {
+        role: "user",
+        content: `Problem Title: ${problemTitle}
+Problem Description:
+${description}`
+      }
+    ],
+    temperature: 0.1
+  };
+
+  try {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        { action: "groqFetch", apiKey, body: requestBody },
+        (response) => {
+          if (!response || !response.success) {
+            console.error("API Error:", response?.error);
+            resolve({ error: `API Error: ${response?.error || "Unknown error"}` });
+          } else {
+            const rawContent = response.data?.choices?.[0]?.message?.content?.trim() || "{}";
+            
+            // Clean up if the model wrapped it in markdown code blocks
+            let cleanJson = rawContent;
+            if (cleanJson.startsWith("```")) {
+              cleanJson = cleanJson.replace(/^```(?:json)?\n|```$/g, "").trim();
+            }
+            try {
+              resolve(JSON.parse(cleanJson));
+            } catch (jsonErr) {
+              console.error("Failed to parse JSON:", cleanJson);
+              resolve({ error: "Failed to parse popular solution response." });
+            }
+          }
+        }
+      );
+    });
+  } catch (error) {
+    console.error("API Error:", error);
+    return { error: "Error fetching popular solution approach." };
+  }
+}
+
+async function loadPopularSolution(title, box) {
+  const popularBody = box.querySelector("#popular-card-body");
+  if (!popularBody) return;
+
+  // If we already have it in state, render it immediately
+  if (currentPopularSolution) {
+    renderPopularSolution(currentPopularSolution, popularBody);
+    return;
+  }
+
+  // Fetch from API
+  const solution = await getPopularSolution(title);
+  currentPopularSolution = solution;
+
+  renderPopularSolution(solution, popularBody);
+}
+
+function renderPopularSolution(solution, popularBody) {
+  if (!solution || solution.error) {
+    popularBody.innerHTML = `<div style="color: #ef4444; font-size: 12px; font-weight: 500;">${solution?.error || "Failed to load approach details."}</div>`;
+    return;
+  }
+
+  popularBody.innerHTML = `
+    <div class="approach-name">${solution.approach}</div>
+    <div class="complexity-container">
+      <span class="badge badge-time">Time: ${solution.timeComplexity}</span>
+      <span class="badge badge-space">Space: ${solution.spaceComplexity}</span>
+    </div>
+    <div class="approach-summary">${solution.summary}</div>
+  `;
+}
+
 // Create popup
 function createHintBox(title, difficulty) {
   if (document.getElementById("dsa-mentor-box")) return;
 
   const box = document.createElement("div");
-
   box.id = "dsa-mentor-box";
-
-  box.style.position = "fixed";
-  box.style.bottom = "100px";
-  box.style.right = "40px";
-  box.style.width = "360px";
-  box.style.maxHeight = "500px";
-  box.style.background = "#111827";
-  box.style.color = "white";
-  box.style.padding = "16px";
-  box.style.borderRadius = "12px";
-  box.style.boxShadow = "0 10px 30px rgba(0,0,0,0.4)";
-  box.style.zIndex = "999999";
-  box.style.overflowY = "auto";
-  box.style.fontFamily = "Arial, sans-serif";
 
   const difficultyClass = difficulty.toLowerCase();
 
   box.innerHTML = `
     <div id="dsa-mentor-header">
-      <span>🧠 DSA Mentor</span>
+      <span>🧠 DSA Mentor 2.0</span>
       <span id="mentor-close">✕</span>
     </div>
 
@@ -290,32 +401,116 @@ function createHintBox(title, difficulty) {
       <span class="${difficultyClass}">${difficulty}</span>
     </div>
 
+    <!-- Popular Approach Card -->
+    <div id="mentor-popular-card" class="mentor-card">
+      <div class="card-header">
+        <span class="card-title">💡 Popular Approach</span>
+        <span id="card-toggle-btn" class="card-toggle-btn">[Hide]</span>
+      </div>
+      <div id="popular-card-body" class="popular-card-body">
+        <div class="skeleton skeleton-text" style="width: 90%;"></div>
+        <div class="skeleton skeleton-text" style="width: 75%;"></div>
+        <div class="skeleton skeleton-text" style="width: 55%;"></div>
+      </div>
+    </div>
+
     <div id="hint-container"></div>
 
-    <button id="next-hint-btn">Get Next Hint</button>
+    <div class="mentor-actions">
+      <button id="next-hint-btn">Get Next Hint</button>
+      <button id="reset-mentor-btn" title="Reset progress and start over">🔄 Reset</button>
+    </div>
+    
     <button id="pseudocode-btn">Reveal Pseudocode</button>
   `;
 
   document.body.appendChild(box);
 
+  // Trigger popular solution fetch
+  loadPopularSolution(title, box);
+
+  const toggleBtn = box.querySelector("#card-toggle-btn");
+  const popularBody = box.querySelector("#popular-card-body");
+  toggleBtn.addEventListener("click", () => {
+    if (popularBody.style.display === "none") {
+      popularBody.style.display = "block";
+      toggleBtn.innerText = "[Hide]";
+    } else {
+      popularBody.style.display = "none";
+      toggleBtn.innerText = "[Show]";
+    }
+  });
+
   const hintContainer = box.querySelector("#hint-container");
   const nextBtn = box.querySelector("#next-hint-btn");
   const pseudoBtn = box.querySelector("#pseudocode-btn");
+  const resetBtn = box.querySelector("#reset-mentor-btn");
+
+  resetBtn.addEventListener("click", () => {
+    hintLevel = 0;
+    hintHistory = [];
+    hintContainer.innerHTML = "";
+    nextBtn.disabled = false;
+    nextBtn.innerText = "Get Next Hint";
+    pseudoBtn.style.display = "none";
+    pseudoBtn.innerText = "Reveal Pseudocode";
+    pseudoBtn.disabled = false;
+  });
 
   pseudoBtn.addEventListener("click", async () => {
     pseudoBtn.innerText = "Generating...";
     pseudoBtn.disabled = true;
 
     const pseudo = await getPseudoCode(title);
+    
+    if (pseudo.startsWith("❌")) {
+      hintContainer.innerHTML += `
+        <div class="hint" style="border-color: rgba(239, 68, 68, 0.2);">
+          <b style="color: #ef4444;">Error</b>
+          <div>${pseudo}</div>
+        </div>
+      `;
+      pseudoBtn.innerText = "Error Generating";
+      pseudoBtn.disabled = false;
+      return;
+    }
+
     const cleanPseudo = pseudo.replace(/^```[a-zA-Z]*\n|```$/g, "").trim();
     const formattedPseudo = cleanPseudo.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
 
-    hintContainer.innerHTML += `
+    // Remove any existing pseudocode container first
+    const existingPseudo = hintContainer.querySelector(".pseudo-container");
+    if (existingPseudo) existingPseudo.remove();
+
+    const pseudoContainer = document.createElement("div");
+    pseudoContainer.className = "pseudo-container";
+    pseudoContainer.innerHTML = `
       <div class="hint">
         <b>Pseudocode</b>
-        <div class="pseudo-block">${formattedPseudo}</div>
+        <button class="copy-pseudo-btn">Copy</button>
+        <pre class="pseudo-block">${formattedPseudo}</pre>
       </div>
     `;
+
+    hintContainer.appendChild(pseudoContainer);
+    box.scrollTop = box.scrollHeight;
+
+    const copyBtn = pseudoContainer.querySelector(".copy-pseudo-btn");
+    copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(cleanPseudo).then(() => {
+        copyBtn.innerText = "✓ Copied";
+        copyBtn.style.background = "#059669";
+        copyBtn.style.borderColor = "#10b981";
+        setTimeout(() => {
+          copyBtn.innerText = "Copy";
+          copyBtn.style.background = "rgba(30, 41, 59, 0.85)";
+          copyBtn.style.borderColor = "rgba(255, 255, 255, 0.1)";
+        }, 2000);
+      }).catch(err => {
+        console.error("Could not copy pseudocode: ", err);
+        copyBtn.innerText = "Failed";
+      });
+    });
 
     pseudoBtn.innerText = "✓ Pseudocode Generated";
   });
@@ -324,7 +519,22 @@ function createHintBox(title, difficulty) {
     nextBtn.innerText = "Generating hint...";
     nextBtn.disabled = true;
 
+    // Show loading skeleton inside hintContainer while fetching hint
+    const skeletonDiv = document.createElement("div");
+    skeletonDiv.className = "hint";
+    skeletonDiv.innerHTML = `
+      <b>Hint ${hintLevel + 1}</b>
+      <div class="skeleton skeleton-text" style="width: 90%; margin-top: 6px;"></div>
+      <div class="skeleton skeleton-text" style="width: 80%;"></div>
+      <div class="skeleton skeleton-text" style="width: 60%;"></div>
+    `;
+    hintContainer.appendChild(skeletonDiv);
+    box.scrollTop = box.scrollHeight;
+
     const hint = await getAIHint(title);
+    
+    // Remove the skeleton loader
+    skeletonDiv.remove();
 
     if (!hintHistory.includes(hint)) {
       hintHistory.push(hint);
@@ -339,11 +549,13 @@ function createHintBox(title, difficulty) {
 
     nextBtn.disabled = false;
     nextBtn.innerText = "Get Next Hint";
+    box.scrollTop = box.scrollHeight;
 
     if (hintHistory.length >= 3) {
       nextBtn.disabled = true;
       nextBtn.innerText = "Hints Completed";
       pseudoBtn.style.display = "block";
+      box.scrollTop = box.scrollHeight;
     }
   });
 
