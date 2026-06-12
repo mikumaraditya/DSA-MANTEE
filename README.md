@@ -7,20 +7,26 @@ AI-powered progressive hints and pseudocode generator for LeetCode problems. **D
 ## 🚀 Key Features
 
 * **Context-Aware Extraction**: Automatically detects the problem title, description, and difficulty level on LeetCode's active tab.
+* **Upfront Popular Solution**: Displays the most optimal and widely-used approach (with Time/Space complexity badges and a summary) right away. Features a collapsible panel to toggle visibility.
 * **Progressive Hinting System**:
-  * **Hint 1**: Clarifies the problem requirements and makes sure you understand what is being asked.
-  * **Hint 2**: Guides you toward the correct algorithmic pattern (e.g., Two Pointers, Hashmaps, Stacks, Sliding Windows).
-  * **Hint 3**: Reveals the core trick or key observation required to crack the problem.
-* **Step-by-Step Pseudocode**: Generates a language-agnostic logical workflow (6–8 clean steps) to help you structure your code without handing you a copy-paste solution.
+  * **Hint 1**: Clarifies the core idea of the popular approach, initial state setups, and constraint limits.
+  * **Hint 2**: Guides you towards the traversal/iteration logic and state transitions.
+  * **Hint 3**: Details critical edge cases, termination checks, and final calculations.
+* **Explainable Pseudocode**: Generates highly readable, structured, and language-agnostic logic blocks that:
+  * Provide a high-level summary at the top.
+  * Include detailed inline comments (`#`) explaining key steps.
+  * Use descriptive, self-documenting naming conventions (no cryptic single-letter variables).
+* **JetBrains Mono Typography**: Renders the pseudocode in a beautiful monospace code font with polished spacing and line heights.
+* **Reset & Copy Utilities**: Features a one-click clipboard copy button (with active success state feedback) and a session reset button to start fresh.
 * **Secure API Key Management**: Saves your Groq API key locally using `chrome.storage.sync` so that your credentials remain secure.
-* **Premium Dark Mode UI**: A floating glassmorphic overlay designed with smooth fade-in animations and matching LeetCode difficulty styling.
+* **Premium Glassmorphic UI**: A floating dark overlay designed with transparent blur backdrops, pulse-loading skeletons, entry animations, and matching difficulty styling.
 
 ---
 
 ## 🛠️ Tech Stack
 
-* **Frontend**: HTML5, Vanilla CSS3 (with custom animations), JavaScript (ES6+)
-* **Extension APIs**: Chrome Extension Manifest V3 (Content Scripts, Storage, Scripting)
+* **Frontend**: HTML5, Vanilla CSS3 (glassmorphic backdrops, pulse animation keyframes), JavaScript (ES6+)
+* **Extension APIs**: Chrome Extension Manifest V3 (Content Scripts, Storage, Scripting, Background Worker Messaging to bypass LeetCode CSP)
 * **LLM Core**: Groq Cloud API (`llama-3.1-8b-instant`)
 
 ---
