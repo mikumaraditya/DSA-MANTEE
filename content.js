@@ -146,48 +146,28 @@ async function getAIHint(problemTitle) {
           messages: [
             {
               role: "system",
-              content: `You are an expert Data Structures and Algorithms mentor.
+              content: `You are an expert Data Structures and Algorithms (DSA) mentor.
+Your job is to guide the student to discover the solution on their own. Never provide code, syntax, or the final direct solution.
 
-Your job is to help the student THINK like a problem solver.
-
-Rules:
-• Never give the full solution.
-• Never provide code.
-• Each hint should unlock the next thinking step.
-• Keep hints short, practical and insightful.
-• Focus on patterns used in coding interviews.
-
-Hint structure:
-Hint 1 → Help the student understand what the problem is asking.
-Hint 2 → Guide them toward the correct algorithmic pattern (two pointers, hashmap, stack, sliding window, etc).
-Hint 3 → Reveal the core trick or observation required to solve the problem.
-
-Hints should trigger an "Aha!" moment.
-
-Avoid generic hints like "try using a data structure".
-Explain WHY that structure helps.`,
+Core Rules:
+1. Do not provide code blocks or snippets in any language.
+2. Structure the progressive hints to build upon each other:
+   - Hint 1: Help the student understand the core problem, highlight brute-force limits, and analyze constraints (e.g., how the size of the input limits the allowed time complexity).
+   - Hint 2: Direct them toward the appropriate pattern (e.g., Two Pointers, HashMap, Stack, Sliding Window, DP) and explain WHY it fits.
+   - Hint 3: Reveal the core logic transition, state update logic, or critical edge cases to watch out for.
+3. End every hint with a Socratic question that prompts the student's next step.
+4. Keep the response concise (2-4 sentences max).`,
             },
             {
               role: "user",
               content: `Problem Title: ${problemTitle}
-
 Problem Description:
 ${description}
 
-Hints already given:
+Previous Hints Shared:
 ${previousHints}
 
-Generate Hint #${hintLevel}.
-
-Requirements:
-• Maximum 2-3 sentences
-• Clear and specific
-• Focus on reasoning, not theory
-• Do not reveal full solution
-• Do not provide code
-
-Goal:
-Help the student move one step closer to discovering the algorithm themselves.`,
+Generate Hint #${hintLevel} based on the rules. Ensure it directly targets the goal of Hint #${hintLevel} and ends with a guiding question.`,
             },
           ],
         }),
@@ -233,59 +213,23 @@ async function getPseudoCode(problemTitle) {
           messages: [
             {
               role: "system",
-              content: `
-You are an expert Data Structures and Algorithms mentor.
+              content: `You are an expert DSA mentor. Your task is to output highly structured, language-agnostic pseudocode.
 
-Your task is to convert the problem solution into CLEAR algorithmic pseudocode.
-
-Rules:
-• Do NOT provide programming language code.
-• Use plain English steps.
-• Each step must represent an actual logical operation.
-• The student should be able to convert this directly into code.
-• Avoid vague instructions like "process the array".
-• Be specific about what needs to be checked or stored.
-
-Structure:
-1. Understand the input
-2. Initialize required variables or data structures
-3. Describe the main algorithm loop or logic
-4. Explain how results are updated
-5. Return the final result
-
-Keep the pseudocode concise but logically complete.
-`,
+Formatting Rules:
+1. Write structured, indented pseudocode (using spaces for indentation).
+2. Use uppercase keywords for control flow: FUNCTION, INITIALIZE, LOOP, IF, ELSE, WHILE, RETURN.
+3. Do NOT use programming language syntax (like semicolons, curly braces, or specific language libraries).
+4. Write steps in clear, plain English.
+5. Bold variable names and key terms using markdown asterisks (**variable**).`,
             },
             {
               role: "user",
-              content: `
-Problem Title: ${problemTitle}
-
+              content: `Problem Title: ${problemTitle}
 Problem Description:
 ${description}
 
-Generate a step-by-step pseudocode plan to solve this problem.
-
-Requirements:
-• Maximum 6–8 steps
-• Each step on a new line
-• Each step must describe a logical action
-• Do NOT use programming syntax
-• Do NOT use semicolons or brackets
-
-Format example:
-
-Step 1: Read the input array
-Step 2: Create a variable to store the result
-Step 3: Loop through each element
-Step 4: Check the required condition
-Step 5: Update the result if condition matches
-Step 6: Return the final result
-
-The output must start with:
-
-Step-by-Step Logic
-`,
+Provide a clean, step-by-step pseudocode structure for the optimal solution.
+Start directly with the code block format. Do not add introductory or concluding conversational text.`,
             },
           ],
         }),
@@ -364,8 +308,8 @@ function createHintBox(title, difficulty) {
     pseudoBtn.disabled = true;
 
     const pseudo = await getPseudoCode(title);
-
-    const formattedPseudo = pseudo.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+    const cleanPseudo = pseudo.replace(/^```[a-zA-Z]*\n|```$/g, "").trim();
+    const formattedPseudo = cleanPseudo.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
 
     hintContainer.innerHTML += `
       <div class="hint">
