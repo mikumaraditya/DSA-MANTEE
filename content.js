@@ -133,20 +133,12 @@ async function getAIHint(problemTitle) {
   const previousHints = hintHistory.join("\n");
 
   try {
-    const response = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + apiKey,
-        },
-        body: JSON.stringify({
-          model: "llama-3.1-8b-instant",
-          messages: [
-            {
-              role: "system",
-              content: `You are an expert Data Structures and Algorithms (DSA) mentor.
+    const requestBody = {
+      model: "llama-3.1-8b-instant",
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert Data Structures and Algorithms (DSA) mentor.
 Your job is to guide the student to discover the solution on their own. Never provide code, syntax, or the final direct solution.
 
 Core Rules:
@@ -157,10 +149,10 @@ Core Rules:
    - Hint 3: Reveal the core logic transition, state update logic, or critical edge cases to watch out for.
 3. End every hint with a Socratic question that prompts the student's next step.
 4. Keep the response concise (2-4 sentences max).`,
-            },
-            {
-              role: "user",
-              content: `Problem Title: ${problemTitle}
+        },
+        {
+          role: "user",
+          content: `Problem Title: ${problemTitle}
 Problem Description:
 ${description}
 
@@ -168,22 +160,25 @@ Previous Hints Shared:
 ${previousHints}
 
 Generate Hint #${hintLevel} based on the rules. Ensure it directly targets the goal of Hint #${hintLevel} and ends with a guiding question.`,
-            },
-          ],
-        }),
-      },
-    );
+        },
+      ],
+    };
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("API Error Response:", errorData);
-      return `❌ API Error: ${errorData?.error?.message || response.statusText}`;
-    }
-
-    const data = await response.json();
-    return (
-      data?.choices?.[0]?.message?.content || "I'm stuck, try asking again!"
-    );
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        { action: "groqFetch", apiKey, body: requestBody },
+        (response) => {
+          if (!response || !response.success) {
+            console.error("API Error:", response?.error);
+            resolve(`❌ API Error: ${response?.error || "Unknown error"}`);
+          } else {
+            resolve(
+              response.data?.choices?.[0]?.message?.content || "I'm stuck, try asking again!"
+            );
+          }
+        }
+      );
+    });
   } catch (error) {
     console.error("API Error:", error);
     return "❌ Error fetching hint. Check your API key.";
@@ -200,20 +195,12 @@ async function getPseudoCode(problemTitle) {
   const description = getProblemDescription();
 
   try {
-    const response = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + apiKey,
-        },
-        body: JSON.stringify({
-          model: "llama-3.1-8b-instant",
-          messages: [
-            {
-              role: "system",
-              content: `You are an expert DSA mentor. Your task is to output highly structured, language-agnostic pseudocode.
+    const requestBody = {
+      model: "llama-3.1-8b-instant",
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert DSA mentor. Your task is to output highly structured, language-agnostic pseudocode.
 
 Formatting Rules:
 1. Write structured, indented pseudocode (using spaces for indentation).
@@ -221,29 +208,34 @@ Formatting Rules:
 3. Do NOT use programming language syntax (like semicolons, curly braces, or specific language libraries).
 4. Write steps in clear, plain English.
 5. Bold variable names and key terms using markdown asterisks (**variable**).`,
-            },
-            {
-              role: "user",
-              content: `Problem Title: ${problemTitle}
+        },
+        {
+          role: "user",
+          content: `Problem Title: ${problemTitle}
 Problem Description:
 ${description}
 
 Provide a clean, step-by-step pseudocode structure for the optimal solution.
 Start directly with the code block format. Do not add introductory or concluding conversational text.`,
-            },
-          ],
-        }),
-      },
-    );
+        },
+      ],
+    };
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("API Error Response:", errorData);
-      return `❌ API Error: ${errorData?.error?.message || response.statusText}`;
-    }
-
-    const data = await response.json();
-    return data?.choices?.[0]?.message?.content || "Could not generate logic.";
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        { action: "groqFetch", apiKey, body: requestBody },
+        (response) => {
+          if (!response || !response.success) {
+            console.error("API Error:", response?.error);
+            resolve(`❌ API Error: ${response?.error || "Unknown error"}`);
+          } else {
+            resolve(
+              response.data?.choices?.[0]?.message?.content || "Could not generate logic."
+            );
+          }
+        }
+      );
+    });
   } catch (error) {
     console.error("API Error:", error);
     return "❌ Error generating pseudocode.";
