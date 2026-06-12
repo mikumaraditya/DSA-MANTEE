@@ -1,19 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <style>
-    body { width: 300px; padding: 15px; font-family: Arial; }
-    input { width: 100%; padding: 8px; margin: 10px 0; }
-    button { width: 100%; padding: 10px; background: #4f46e5; color: white; border: none; cursor: pointer; 
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <h2>DSA Mentor ⚙️</h2>
-  <label>Enter your Groq API Key:</label>
-  <input type="password" id="apiKey" placeholder="Your API key here">
-  <button id="saveBtn">Save API Key</button>
-  <p id="status"></p>
+  <div class="card">
+    <div class="header">
+      <div class="logo">🧠</div>
+      <div>
+        <h1>DSA Mentor</h1>
+        <p class="subtitle">AI Hint Settings</p>
+      </div>
+    </div>
+    
+    <div class="divider"></div>
+    
+    <div class="form-group">
+      <label for="apiKey">Groq API Key</label>
+      <div class="input-wrapper">
+        <input type="password" id="apiKey" placeholder="gsk_...">
+        <button id="toggleVisible" class="icon-btn" title="Toggle visibility">👁️</button>
+      </div>
+    </div>
+
+    <button id="saveBtn">Save Config</button>
+    
+    <div id="status"></div>
+    
+    <div class="divider"></div>
+    
+    <div class="footer">
+      <a href="https://console.groq.com/keys" target="_blank">Get Groq API Key &rarr;</a>
+    </div>
+  </div>
   <script src="popup.js"></script>
 </body>
 </html>
