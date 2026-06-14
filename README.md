@@ -8,16 +8,17 @@ AI-powered progressive hints and pseudocode generator for LeetCode problems. **D
 
 * **Context-Aware Extraction**: Automatically detects the problem title, description, and difficulty level on LeetCode's active tab.
 * **Upfront Popular Solution**: Displays the most optimal and widely-used approach (with Time/Space complexity badges and a summary) right away. Features a collapsible panel to toggle visibility.
-* **Progressive Hinting System**:
-  * **Hint 1**: Clarifies the core idea of the popular approach, initial state setups, and constraint limits.
-  * **Hint 2**: Guides you towards the traversal/iteration logic and state transitions.
-  * **Hint 3**: Details critical edge cases, termination checks, and final calculations.
-* **Explainable Pseudocode**: Generates highly readable, structured, and language-agnostic logic blocks that:
-  * Provide a high-level summary at the top.
-  * Include detailed inline comments (`#`) explaining key steps.
-  * Use descriptive, self-documenting naming conventions (no cryptic single-letter variables).
-* **JetBrains Mono Typography**: Renders the pseudocode in a beautiful monospace code font with polished spacing and line heights.
-* **Reset & Copy Utilities**: Features a one-click clipboard copy button (with active success state feedback) and a session reset button to start fresh.
+* **Math Typesetting (KaTeX)**: Renders all mathematical notations (like complexity metrics \(O(N)\), input sizes \(N \le 10^5\), and formulas) beautifully using a locally packaged KaTeX renderer (MV3 compliant).
+* **Themed Step-by-Step Hinting**: Delivers exactly 3 incremental steps, color-coded for readability:
+  * 🔵 **Step 1: Understand the Operation** (Indigo theme): Clarifies the core strategy, initial state setups, and key observation constraints.
+  * 🟣 **Step 2: Determine the Maximum Gap** (Purple theme): Explains the mechanism, traversal/iteration details, and state transitions.
+  * 🟢 **Step 3: Calculate the Formula** (Emerald theme): Explains the termination checks, final result construction, and edge cases.
+* **Polished Pseudocode styling**: Generates clean, language-agnostic logic blocks:
+  * Starts with `Algorithm FunctionName(params):` (PascalCase function names, snake_case parameters).
+  * Uses `//` inline comments styled with a custom green color contrast for readability.
+  * No markdown headers or uppercase keywords inside code blocks.
+  * Put complexity information as comments directly inside the function body.
+* **Copy & Reset Utilities**: Features a one-click clipboard copy button (with active success state feedback) and a session reset button to start fresh.
 * **Secure API Key Management**: Saves your Groq API key locally using `chrome.storage.sync` so that your credentials remain secure.
 * **Premium Glassmorphic UI**: A floating dark overlay designed with transparent blur backdrops, pulse-loading skeletons, entry animations, and matching difficulty styling.
 
@@ -26,6 +27,7 @@ AI-powered progressive hints and pseudocode generator for LeetCode problems. **D
 ## 🛠️ Tech Stack
 
 * **Frontend**: HTML5, Vanilla CSS3 (glassmorphic backdrops, pulse animation keyframes), JavaScript (ES6+)
+* **Libraries**: KaTeX 0.16.9 (Math rendering engine + auto-render extension packaged locally)
 * **Extension APIs**: Chrome Extension Manifest V3 (Content Scripts, Storage, Scripting, Background Worker Messaging to bypass LeetCode CSP)
 * **LLM Core**: Groq Cloud API (`openai/gpt-oss-120b`)
 
@@ -58,8 +60,8 @@ cd DSA-MANTEE
 1. Navigate to any problem on [LeetCode](https://leetcode.com/problems/).
 2. You will see a floating **🧠 Ask DSA Mentor** button at the bottom-right of the screen.
 3. Click the button to open the DSA Mentor interface.
-4. Click **Get Next Hint** to receive progressive hints step-by-step.
-5. Once you've viewed the hints, click **Reveal Pseudocode** to see a clean, step-by-step logic block to guide your coding.
+4. Click **Get Next Hint** to receive progressive step-by-step conceptual hints.
+5. Click **Reveal Pseudocode** to see a clean, color-contrasted logic implementation of the optimal solution.
 
 ---
 
@@ -67,6 +69,7 @@ cd DSA-MANTEE
 
 ```
 ├── Screenshots/          # Extension screenshots and UI demonstrations
+├── katex/                # Locally packaged KaTeX CSS, JS, and auto-render files
 ├── content.js            # Main content script that interacts with LeetCode pages and Groq API
 ├── manifest.json         # Extension configuration (Manifest V3)
 ├── popup.html            # Settings popup HTML
@@ -80,4 +83,4 @@ cd DSA-MANTEE
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](file:///C:/Users/91993/Documents/antigravity/fearless-hertz/LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
