@@ -1,6 +1,6 @@
 # 🧠 DSA Mentor
 
-AI-powered progressive hints and pseudocode generator for LeetCode problems. **DSA Mentor** is a Chrome Extension designed to help you *think* like a problem solver rather than just copy-pasting solutions. It leverages the high-speed **Groq API** (running `llama-3.1-8b-instant`) to provide structured guidance directly on the LeetCode interface.
+AI-powered progressive hints and pseudocode generator for LeetCode problems. **DSA Mentor** is a Chrome Extension designed to help you *think* like a problem solver rather than just copy-pasting solutions. It leverages the high-speed **Groq API** (running `openai/gpt-oss-120b`) to provide structured guidance directly on the LeetCode interface.
 
 ---
 
@@ -27,7 +27,7 @@ AI-powered progressive hints and pseudocode generator for LeetCode problems. **D
 
 * **Frontend**: HTML5, Vanilla CSS3 (glassmorphic backdrops, pulse animation keyframes), JavaScript (ES6+)
 * **Extension APIs**: Chrome Extension Manifest V3 (Content Scripts, Storage, Scripting, Background Worker Messaging to bypass LeetCode CSP)
-* **LLM Core**: Groq Cloud API (`llama-3.1-8b-instant`)
+* **LLM Core**: Groq Cloud API (`openai/gpt-oss-120b`)
 
 ---
 

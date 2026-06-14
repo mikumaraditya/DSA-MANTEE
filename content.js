@@ -22,6 +22,12 @@ async function getApiKey() {
   });
 }
 
+// Check if the current page is a single problem page
+function isProblemPage() {
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  return pathParts.length >= 2 && pathParts[0] === 'problems';
+}
+
 // Detect page change (LeetCode SPA)
 setInterval(() => {
   if (location.href !== lastUrl) {
@@ -42,23 +48,39 @@ setInterval(() => {
 
 // Wait until title loads
 function waitForTitle() {
+  if (!isProblemPage()) {
+    console.log("Not on a LeetCode problem page, skipping Mentor button creation.");
+    return;
+  }
+
   let titleElement =
+    document.querySelector('.text-title-large') ||
     document.querySelector('[data-cy="question-title"]') ||
     document.querySelector('[data-testid="question-title"]') ||
     document.querySelector("h1") ||
     document.querySelector("[class*='title']");
 
   if (!titleElement) {
+    console.log("Waiting for title element...");
     setTimeout(waitForTitle, 800);
     return;
   }
 
-  let rawTitle = titleElement.innerText || titleElement.textContent;
-  let cleanTitle = rawTitle.split(". ")[1] || rawTitle;
+  let rawTitle = (titleElement.innerText || titleElement.textContent || "").trim();
+  if (!rawTitle) {
+    console.log("Title element found but text is empty, waiting...");
+    setTimeout(waitForTitle, 800);
+    return;
+  }
 
-  let difficultyElement = document.querySelector('[class*="difficulty"]');
+  // Clean title: "1. Two Sum" -> "Two Sum"
+  let cleanTitle = rawTitle.replace(/^\d+\.\s*/, "").trim();
 
-  let difficulty = difficultyElement ? difficultyElement.innerText : "Unknown";
+  let difficultyElement =
+    document.querySelector('.text-difficulty-easy, .text-difficulty-medium, .text-difficulty-hard') ||
+    document.querySelector('[class*="difficulty"]');
+
+  let difficulty = difficultyElement ? difficultyElement.innerText.trim() : "Unknown";
 
   if (!document.getElementById("dsa-mentor-btn")) {
     createMentorButton(cleanTitle, difficulty);
@@ -110,6 +132,7 @@ function createMentorButton(title, difficulty) {
 function getProblemDescription() {
   // Try multiple selectors for problem description
   const descElement =
+    document.querySelector('[data-track-load="description_content"]') ||
     document.querySelector(".elfjS") ||
     document.querySelector("[data-testid='description']") ||
     document.querySelector(".content__u3I0") ||
@@ -118,6 +141,15 @@ function getProblemDescription() {
   return descElement
     ? descElement.innerText || descElement.textContent
     : "Description not found.";
+}
+
+function escapeHtml(text) {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 // AI Hint Generator
@@ -146,41 +178,44 @@ Overview: ${currentPopularSolution.summary}`;
 
   try {
     const requestBody = {
-      model: "llama-3.1-8b-instant",
+      model: "openai/gpt-oss-120b",
       messages: [
         {
           role: "system",
-          content: `You are an expert Data Structures and Algorithms (DSA) mentor.
+          content: `You are an expert DSA mentor. You will deliver exactly 3 hints one at a time across 3 separate requests.
+
 ${approachContext}
 
-Your job is to guide the student to discover and implement this specific approach step-by-step. Never provide code, syntax, or the final direct solution.
+FORMAT — match this structure exactly for every hint:
 
-Hint Quality Guidelines:
-1. Be specific to the problem's inputs and constraints. Do not give generic theoretical advice.
-2. Analyze the input constraints (e.g., N <= 10^5) to show why this approach's time complexity is required.
-3. Explain the "WHY": Explain why this specific pattern fits.
-4. Walk through a small, concrete input example if helpful.
+**Step [N]: [Step Title]**
+[2-3 sentences explaining this step's concept. Be specific to this problem's variables, constraints, and examples. Explain the WHY, not just the WHAT. End by naturally leading into what the next step will cover — but do not reveal it.]
 
-Progression Structure for this specific approach:
-- Hint 1: Help the student understand the core idea of this approach, how to set up the initial state/variables/pointers, and constraints.
-- Hint 2: Guide them towards the traversal/iteration logic (e.g. how the loop runs, how pointers move, or how the map is updated in each step).
-- Hint 3: Reveal the final transition logic, state updates, edge cases to watch out for, or how the final result is determined.
+STEP RESPONSIBILITIES:
+- Hint 1 / Step 1 → "Understand the Operation": What does a single operation actually do? How does it affect x and num simultaneously? What is the student's first key observation?
+- Hint 2 / Step 2 → "Determine the Maximum Gap": How does repeating the operation t times affect the gap between x and num? What is the maximum possible difference after all operations?
+- Hint 3 / Step 3 → "Calculate the Formula": How do you combine num and the maximum gap into a final answer? What does the formula look like and why does it work?
 
-Response Rules:
-- Never write code blocks, code syntax, or code comments.
-- End each hint with a Socratic question that prompts the student's next step of reasoning.
-- Keep hints practical, concise (max 3-4 sentences), and focused on problem-solving intuition.`,
+RULES:
+- Output only the single step for the current hint number — never reveal future steps.
+- Bold the step title: **Step N: Title**.
+- Use plain English — no code, no pseudocode, no programming syntax.
+- Reference specific variables, constraint values, or example inputs from THIS problem (e.g. "each operation", "t steps", "the gap closes by 2 per operation").
+- No Socratic questions. No "→" lines. No filler phrases like "think about" or "consider using".
+- No introductory or closing text — output only the step block, nothing else.
+
+CORRECTNESS RULE (mandatory before writing):
+Trace Example 1 from the problem. Confirm your explanation leads to the correct answer.
+If it does not — fix your reasoning first. Never output an explanation that produces the wrong answer.`,
         },
         {
           role: "user",
           content: `Problem Title: ${problemTitle}
+
 Problem Description:
 ${description}
 
-Previous Hints Shared:
-${previousHints}
-
-Generate Hint #${hintLevel} based on the rules. Ensure it directly targets the goal of Hint #${hintLevel} and ends with a guiding question.`,
+Deliver Step ${hintLevel} only. Do not reveal Step ${hintLevel + 1} or beyond.`,
         },
       ],
     };
@@ -193,9 +228,9 @@ Generate Hint #${hintLevel} based on the rules. Ensure it directly targets the g
             console.error("API Error:", response?.error);
             resolve(`❌ API Error: ${response?.error || "Unknown error"}`);
           } else {
-            resolve(
-              response.data?.choices?.[0]?.message?.content || "I'm stuck, try asking again!"
-            );
+            let content = response.data?.choices?.[0]?.message?.content || "";
+            content = content.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+            resolve(content || "I'm stuck, try asking again!");
           }
         }
       );
@@ -214,6 +249,8 @@ async function getPseudoCode(problemTitle) {
   }
 
   const description = getProblemDescription();
+  console.log("=== SCRAPED DESCRIPTION ===");
+  console.log(description.slice(0, 300)); // First 300 chars
 
   // Format popular solution info if available
   let approachContext = "";
@@ -223,30 +260,49 @@ Overview: ${currentPopularSolution.summary}`;
   }
 
   const requestBody = {
-    model: "llama-3.1-8b-instant",
+    model: "openai/gpt-oss-120b",
     messages: [
       {
         role: "system",
-        content: `You are an expert DSA mentor. Your task is to output highly structured, language-agnostic, and extremely easy-to-understand pseudocode.
+        content: `You are an expert DSA mentor. Generate pseudocode for the optimal solution to the given problem:
+Title: ${problemTitle}
+Description:
+${description}
+
 ${approachContext}
 
-Formatting & Naming Rules:
-1. At the very beginning of the pseudocode, write a short, 1-2 sentence high-level logic flow summary prefixed with '#'.
-2. Write structured, indented pseudocode (using spaces for indentation).
-3. Use uppercase keywords for control flow: FUNCTION, INITIALIZE, LOOP, IF, ELSE, WHILE, RETURN.
-4. Do NOT use programming language syntax (like semicolons, curly braces, or specific language libraries).
-5. Write steps in clear, plain English.
-6. Add brief inline comments (prefixed with '#') to explain the purpose of variables, complex loop conditions, and key calculations.
-7. Use highly descriptive, clean, and self-documenting naming conventions representing this specific algorithm. Do not use generic single-letter names (e.g., write 'leftPointer', 'rightPointer', 'currentSum', 'hasSeenValue', 'charLastSeenMap' instead of single letters like 'l', 'r', 's', 'val', 'm' except for simple loop indexes if required).
-8. Bold variable names and key terms using markdown asterisks (**variable**).`,
+STYLE — match this format exactly:
+
+Algorithm FunctionName(param1, param2):
+  // explain what the algorithm does and why this approach is optimal
+  // mention time and space complexity here
+  variable_name = ...    // explain why this variable exists
+  for currentItem in collection:
+    // explain what this loop is doing and why
+    if condition:
+      // explain the reasoning behind this check
+      variable_name = updated_value    // explain the update
+  return result
+
+RULES:
+- Start with "Algorithm FunctionName(params):" — PascalCase for function name, snake_case for all variables and params.
+- Use // for all comments — inline after code or on their own line above a block.
+- No # comments. No markdown headers. No "# Overview" section. No complexity badges.
+- Put the overview and complexity as // comments at the top of the function body, not outside it.
+- Use plain English for library calls: append(list, value), get(map, key), contains(set, val), length(list).
+- Use = for assignment, == for comparison, != for not equal.
+- Indent with 2 spaces per nesting level.
+- No single-letter variable names. Use snake_case: left_pointer, current_sum, max_length.
+- No language-specific syntax: no {}, no ;, no type declarations, no .method() calls.
+- No introductory or closing text — output only the pseudocode block, nothing else.
+
+CORRECTNESS RULE (mandatory before writing):
+Trace Example 1 from the problem step by step. Confirm your output matches expected.
+If it does not — fix your approach first. Never output logic that fails Example 1.`,
       },
       {
         role: "user",
-        content: `Problem Title: ${problemTitle}
-Problem Description:
-${description}
-
-Provide a clean, step-by-step pseudocode structure for the optimal solution.
+        content: `Provide a clean, step-by-step pseudocode structure for the complete optimal solution.
 Start directly with the code block format. Do not add introductory or concluding conversational text.`,
       },
     ],
@@ -261,9 +317,9 @@ Start directly with the code block format. Do not add introductory or concluding
             console.error("API Error:", response?.error);
             resolve(`❌ API Error: ${response?.error || "Unknown error"}`);
           } else {
-            resolve(
-              response.data?.choices?.[0]?.message?.content || "Could not generate logic."
-            );
+            let content = response.data?.choices?.[0]?.message?.content || "";
+            content = content.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+            resolve(content || "Could not generate logic.");
           }
         }
       );
@@ -286,11 +342,16 @@ async function getPopularSolution(problemTitle) {
   const description = getProblemDescription();
 
   const requestBody = {
-    model: "llama-3.1-8b-instant",
+    model: "openai/gpt-oss-120b",
     messages: [
       {
         role: "system",
-        content: `You are an expert DSA mentor. Identify the single most popular, optimal, and widely accepted approach to solve this LeetCode problem.
+        content: `You are an expert DSA mentor.
+Identify the single most popular, optimal, and widely accepted approach to solve the following LeetCode problem:
+Title: ${problemTitle}
+Description:
+${description}
+
 You must respond strictly in JSON format. Do not write any explanations before or after the JSON. Do not wrap the JSON in markdown code blocks like \`\`\`json.
 Response format must be exactly:
 {
@@ -302,9 +363,7 @@ Response format must be exactly:
       },
       {
         role: "user",
-        content: `Problem Title: ${problemTitle}
-Problem Description:
-${description}`
+        content: `Identify the popular approach for this problem and return it in the specified JSON format.`
       }
     ],
     temperature: 0.1
@@ -319,7 +378,8 @@ ${description}`
             console.error("API Error:", response?.error);
             resolve({ error: `API Error: ${response?.error || "Unknown error"}` });
           } else {
-            const rawContent = response.data?.choices?.[0]?.message?.content?.trim() || "{}";
+            let rawContent = response.data?.choices?.[0]?.message?.content || "";
+            rawContent = rawContent.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
             
             // Clean up if the model wrapped it in markdown code blocks
             let cleanJson = rawContent;
@@ -475,8 +535,24 @@ function createHintBox(title, difficulty) {
       return;
     }
 
-    const cleanPseudo = pseudo.replace(/^```[a-zA-Z]*\n|```$/g, "").trim();
-    const formattedPseudo = cleanPseudo.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+    const cleanPseudo = pseudo
+      .replace(/^\s*```[a-zA-Z]*\s*/i, "")
+      .replace(/\s*```\s*$/i, "")
+      .trim();
+
+    const lines = cleanPseudo.split("\n");
+    const highlightedLines = lines.map((line) => {
+      const commentIndex = line.indexOf("//");
+      if (commentIndex !== -1) {
+        const codePart = line.substring(0, commentIndex);
+        const commentPart = line.substring(commentIndex);
+        const safeCode = escapeHtml(codePart).replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+        const safeComment = escapeHtml(commentPart);
+        return `${safeCode}<span class="pseudo-comment">${safeComment}</span>`;
+      }
+      return escapeHtml(line).replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+    });
+    const formattedPseudo = highlightedLines.join("\n");
 
     // Remove any existing pseudocode container first
     const existingPseudo = hintContainer.querySelector(".pseudo-container");
@@ -486,13 +562,28 @@ function createHintBox(title, difficulty) {
     pseudoContainer.className = "pseudo-container";
     pseudoContainer.innerHTML = `
       <div class="hint">
-        <b>Pseudocode</b>
+        <b>Step-by-Step Pseudocode</b>
         <button class="copy-pseudo-btn">Copy</button>
+        <div style="font-size: 12px; color: #cbd5e1; margin: 6px 0 8px;">Clear, language-agnostic logic for studying and implementation.</div>
         <pre class="pseudo-block">${formattedPseudo}</pre>
       </div>
     `;
 
     hintContainer.appendChild(pseudoContainer);
+
+    if (typeof renderMathInElement !== "undefined") {
+      try {
+        renderMathInElement(pseudoContainer, {
+          delimiters: [
+            { left: "\\(", right: "\\)", display: false },
+            { left: "\\[", right: "\\]", display: true }
+          ]
+        });
+      } catch (err) {
+        console.error("KaTeX rendering failed:", err);
+      }
+    }
+
     box.scrollTop = box.scrollHeight;
 
     const copyBtn = pseudoContainer.querySelector(".copy-pseudo-btn");
@@ -541,11 +632,43 @@ function createHintBox(title, difficulty) {
     }
 
     hintContainer.innerHTML = hintHistory
-      .map(
-        (hint, index) =>
-          `<div class="hint"><b>Hint ${index + 1}</b><br>${hint}</div>`,
-      )
+      .map((hintText, index) => {
+        const hintNum = index + 1;
+        let cleanHint = hintText.trim();
+        
+        let titleText = `Hint ${hintNum}`;
+        let bodyText = cleanHint;
+        
+        // Match step pattern: e.g., "**Step 1: Understand the Operation**" or "Step 1: Understand the Operation"
+        const stepMatch = cleanHint.match(/^(?:\*\*)?Step\s*\d+\s*:\s*([^\n\r*]+)(?:\*\*)?/i);
+        if (stepMatch) {
+          titleText = `Step ${hintNum}: ${stepMatch[1].trim()}`;
+          bodyText = cleanHint.substring(stepMatch[0].length).trim();
+        }
+        
+        const safeBody = escapeHtml(bodyText).replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+        
+        return `
+          <div class="hint hint-${hintNum}">
+            <b class="hint-title">${escapeHtml(titleText)}</b>
+            <div class="hint-body">${safeBody}</div>
+          </div>
+        `;
+      })
       .join("");
+
+    if (typeof renderMathInElement !== "undefined") {
+      try {
+        renderMathInElement(hintContainer, {
+          delimiters: [
+            { left: "\\(", right: "\\)", display: false },
+            { left: "\\[", right: "\\]", display: true }
+          ]
+        });
+      } catch (err) {
+        console.error("KaTeX rendering failed:", err);
+      }
+    }
 
     nextBtn.disabled = false;
     nextBtn.innerText = "Get Next Hint";
